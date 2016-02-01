@@ -6,4 +6,6 @@
     <string name="btnPhoto">Nouvelle photo</string>
     <string name="btnVideo">Nouvelle video</string>
     <string name="btnAddDB">Remplir la base de donnée</string>
+    <string name="nom_fichier">Nom fichier</string>
+    <string name="commentaire">Commentaire</string>
 </resources>

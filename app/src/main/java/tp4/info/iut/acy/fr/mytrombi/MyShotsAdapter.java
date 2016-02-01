@@ -65,7 +65,7 @@ public class MyShotsAdapter {
     // select * (renvoie tous les éléments de la table)
     public Cursor getAllData(){
         return shotsDB.query(dbHelper.NOM_TABLE, new String[]{ ShotsDBhelper.KEY_ID,
-                ShotsDBhelper.KEY_PATH, ShotsDBhelper.KEY_TYPE,ShotsDBhelper.KEY_COMMENT}, null, null, null, null, null);
+                ShotsDBhelper.KEY_PATH, ShotsDBhelper.KEY_TYPE,ShotsDBhelper.KEY_COMMENT}, null, null, null, null, dbHelper.KEY_ID+" DESC");
     }
 
     // renvoie un seul éléments de la table identifié par son ID

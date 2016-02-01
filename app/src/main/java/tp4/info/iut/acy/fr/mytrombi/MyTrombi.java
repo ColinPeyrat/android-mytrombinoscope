@@ -1,6 +1,8 @@
 package tp4.info.iut.acy.fr.mytrombi;
 
 import android.app.Activity;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
@@ -13,7 +15,9 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
 import android.widget.Button;
+import android.widget.EditText;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleCursorAdapter;
@@ -37,6 +41,8 @@ public class MyTrombi extends Activity implements OnClickListener {
     private String filepath_last = "photo0"+EXTENSION_PHOTO;
     private String filepathvideo_last = "video0.mp4"+EXTENSION_VIDEO;
 
+    private static String stringforAsk;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -52,6 +58,40 @@ public class MyTrombi extends Activity implements OnClickListener {
         btnAdd.setOnClickListener(this);
 
         sauvegardeShotsDB = new MyShotsAdapter(getApplicationContext());
+
+        ListView ListViewDB = (ListView)findViewById(R.id.ListViewDB);
+
+        ListViewDB.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+
+            @Override
+            public boolean onItemLongClick(final AdapterView<?> adapter,
+                                           View arg1, int position, final long id) {
+                final AlertDialog.Builder b = new AlertDialog.Builder(
+                        MyTrombi.this);
+                b.setIcon(android.R.drawable.ic_dialog_alert);
+                b.setMessage("Supprimer ceci de votre trombinoscope ?");
+                b.setPositiveButton("Oui",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog,
+                                                int whichButton) {
+                                Toast.makeText(getApplicationContext(), "Supprimé", Toast.LENGTH_LONG).show();
+                                sauvegardeShotsDB.removeLine(id);
+
+                                //rafraichis la liste view
+                                populate();
+                            }
+                        });
+                b.setNegativeButton("Non",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int whichButton) {
+                                dialog.cancel();
+                            }
+                        });
+
+                        b.show();
+                        return true;
+                    }
+                });
 
     }
 
@@ -69,7 +109,8 @@ public class MyTrombi extends Activity implements OnClickListener {
     protected void onPause() {
         super.onPause();
         // ferme la connexion a la base de donee
-        sauvegardeShotsDB.close();
+        // On ne doit pas le mettre, sinon quand l'appareil photo est appelé, la connexion a la base de donnée est fermé (PROBLEME AVEC TELEPHONE PYSIQUE)
+        // sauvegardeShotsDB.close();
     }
 
     @Override
@@ -122,8 +163,9 @@ public class MyTrombi extends Activity implements OnClickListener {
         // mise à jour du nom de fichier de sauvegarde
         filepath_last = fichierDeSortie.toString();
 
+        // ENCORE OBLIGE DE COMMENTER CETTE LIGNE POUR QUE LE DATA.GETDATA() MARCHE
         // on ajoute a l intent des informations sur le fichier d enregistrement de l'image
-        photoIntent.putExtra(MediaStore.EXTRA_OUTPUT, fichierDeSortie);
+        //photoIntent.putExtra(MediaStore.EXTRA_OUTPUT, fichierDeSortie);
 
         /* lancement de l intent... avec attente de reponse.... lorsque la reponse
         est disponible
@@ -162,8 +204,9 @@ public class MyTrombi extends Activity implements OnClickListener {
         // mise à jour du nom de fichier de sauvegarde
         filepathvideo_last = fichierDeSortie.toString();
 
+        // ENCORE OBLIGE DE COMMENTER CETTE LIGNE POUR QUE LE DATA.GETDATA() MARCHE
         // on ajoute a l intent des informations sur le fichier d enregistrement de l'image
-        photoIntent.putExtra(MediaStore.EXTRA_OUTPUT, fichierDeSortie);
+        // photoIntent.putExtra(MediaStore.EXTRA_OUTPUT, fichierDeSortie);
 
         /* lancement de l intent... avec attente de reponse.... lorsque la reponse
         est disponible
@@ -176,18 +219,36 @@ public class MyTrombi extends Activity implements OnClickListener {
     }
 
     protected void onActivityResult(int requestCode, int resultCode, Intent data){
+
         // affiche un Toast si le parametre requestCode correspond à PRENDRE_PHOTO_FLAG
-        if(requestCode == PRENDRE_PHOTO_FLAG){
+        if(requestCode == PRENDRE_PHOTO_FLAG && resultCode == RESULT_OK){
             Toast.makeText(getApplicationContext(), "Photo bien sauvegardé",
-                    Toast.LENGTH_LONG). show ();
+                    Toast.LENGTH_LONG).show();
+
+            // recupere l'uri de la photo et le convertis en String
+            String pathPicture = data.getData().toString();
+
+            // recupere la ligne saisie par l'utilisateur et insère dans la base de donnée
+            askAndInsert("Un commentaire ?", "photo", pathPicture);
+
+            // ANCIENNE METHODE AVANT LE "POUR ALLER PLUS LOIN"
             // ajoute l'enregistrement de la photo à la base de donnée
-            sauvegardeShotsDB.insertShot(data.getExtras().get("data").toString(),"photo","une superbe photo");
+            //sauvegardeShotsDB.insertShot(pathPicture, "photo", commentPicture);
         }
-        if(requestCode == PRENDRE_VIDEO_FLAG){
+        if(requestCode == PRENDRE_VIDEO_FLAG && resultCode == RESULT_OK){
             Toast.makeText(getApplicationContext(), "Vidéo bien sauvegardé",
-                    Toast.LENGTH_LONG). show ();
+                    Toast.LENGTH_LONG).show ();
+
+            // recupere l'uri de la video et le convertis en String
+            String pathMovie = data.getData().toString();
+
+            // recupere la ligne saisie par l'utilisateur et insère dans la base de donnée
+            askAndInsert("Un commentaire ?", "video", pathMovie);
+
+
+            // ANCIENNE METHODE AVANT LE "POUR ALLER PLUS LOIN"
             // ajoute l'enregistrement de la vidéo à la base de donnée
-            sauvegardeShotsDB.insertShot(data.getExtras().get("data").toString(),"vidéo","une superbe vidéo");
+            // sauvegardeShotsDB.insertShot(pathMovie,"vidéo","esdsq");
         }
     }
 
@@ -200,7 +261,7 @@ public class MyTrombi extends Activity implements OnClickListener {
         if (filepathvideo_last!=null)
             outState.putString("FILENAME_VIDEO", filepathvideo_last);
 
-        sauvegardeShotsDB.close();
+        //sauvegardeShotsDB.close();
     }
 
     // restoration de l'état de l'activity avant fermeture
@@ -215,7 +276,7 @@ public class MyTrombi extends Activity implements OnClickListener {
                 filepath_last=inState.getString("FILENAME_PHOTO");
         filepathvideo_last=inState.getString("FILENAME_VIDEO");
 
-        sauvegardeShotsDB.open();
+        //sauvegardeShotsDB.open();
     }
 
     // alimentation de la liste par le contenu de la base de données
@@ -226,6 +287,41 @@ public class MyTrombi extends Activity implements OnClickListener {
                 new int[] {R.id.nom_fichier, R.id.commentaire});
         // Bind to our new adapter.
         ((ListView)findViewById(R.id.ListViewDB)).setAdapter(adapter);
+    }
+
+    // AlertDialog pour demander à l'utilisateur le nom de fichier d'enregistrement.
+    private void askAndInsert(String note, final String fileType, final String pathFile){
+
+        // valeur par défaut attribuee a filename (gestion du bouton cancel)
+        stringforAsk = null;
+
+        // creation du alert dialog avec un EditText, 2 boutons: OK et Cancel
+        final AlertDialog.Builder alert = new AlertDialog.Builder(this);
+        final EditText input = new EditText(this);
+        input.setText(note);
+        alert.setView(input);
+        alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
+            public void onClick(DialogInterface dialog, int whichButton) {
+                stringforAsk = input.getText().toString().trim();
+                sauvegardeShotsDB.insertShot(pathFile,fileType,stringforAsk);
+
+                // rafraichis la listView après ajout
+                populate();
+
+                Toast.makeText(getApplicationContext(), "Votre fichier a bien été ajouté au trombinoscope",
+                        Toast.LENGTH_LONG).show();
+
+            }
+        });
+        alert.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int whichButton) {
+                        dialog.cancel();
+                        Toast.makeText(getApplicationContext(), "Insertion dans le trombinoscope annulé",
+                                Toast.LENGTH_LONG).show();
+                    }
+                });
+        alert.show();
     }
 
 }
