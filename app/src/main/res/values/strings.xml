@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">MyTrombi</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
+    <string name="btnPhoto">Nouvelle photo</string>
+    <string name="btnVideo">Nouvelle video</string>
+    <string name="btnAddDB">Remplir la base de donnée</string>
+</resources>
