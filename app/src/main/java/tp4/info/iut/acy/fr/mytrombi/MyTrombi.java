@@ -62,6 +62,7 @@ public class MyTrombi extends Activity implements OnClickListener {
 
         ListView ListViewDB = (ListView)findViewById(R.id.ListViewDB);
 
+        // detecte un clique de longue durée sur un ListView
         ListViewDB.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(final AdapterView<?> adapter,
@@ -99,7 +100,7 @@ public class MyTrombi extends Activity implements OnClickListener {
         super.onResume();
         // ouvre la connexion a la base de donnée
         sauvegardeShotsDB.open();
-        // refraichis la listeView
+        // rafraichis la listeView
         populate();
     }
 
