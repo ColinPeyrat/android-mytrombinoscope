@@ -57,7 +57,7 @@ public class MyShotsAdapter {
     }
 
     // suppression
-    public boolean removeLine(long ligneID){
+    public boolean removeShot(long ligneID){
         Log.i("removeLine", "appelé");
         return shotsDB.delete(ShotsDBhelper.NOM_TABLE, ShotsDBhelper.KEY_ID + " = " + ligneID, null)>0;
     }

@@ -45,6 +45,7 @@ public class MyTrombi extends Activity implements OnClickListener {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_my_trombi);
 
@@ -62,12 +63,10 @@ public class MyTrombi extends Activity implements OnClickListener {
         ListView ListViewDB = (ListView)findViewById(R.id.ListViewDB);
 
         ListViewDB.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
-
             @Override
             public boolean onItemLongClick(final AdapterView<?> adapter,
-                                           View arg1, int position, final long id) {
-                final AlertDialog.Builder b = new AlertDialog.Builder(
-                        MyTrombi.this);
+                                           View v, int position, final long id) {
+                final AlertDialog.Builder b = new AlertDialog.Builder(MyTrombi.this);
                 b.setIcon(android.R.drawable.ic_dialog_alert);
                 b.setMessage("Supprimer ceci de votre trombinoscope ?");
                 b.setPositiveButton("Oui",
@@ -75,7 +74,9 @@ public class MyTrombi extends Activity implements OnClickListener {
                             public void onClick(DialogInterface dialog,
                                                 int whichButton) {
                                 Toast.makeText(getApplicationContext(), "Supprimé", Toast.LENGTH_LONG).show();
-                                sauvegardeShotsDB.removeLine(id);
+
+                                // supprime la ligne dans la base de donnée correspondant a l'item dans la ListView
+                                sauvegardeShotsDB.removeShot(id);
 
                                 //rafraichis la liste view
                                 populate();
@@ -87,12 +88,10 @@ public class MyTrombi extends Activity implements OnClickListener {
                                 dialog.cancel();
                             }
                         });
-
-                        b.show();
-                        return true;
-                    }
-                });
-
+                b.show();
+                return true;
+            }
+        });
     }
 
     @Override
@@ -102,7 +101,6 @@ public class MyTrombi extends Activity implements OnClickListener {
         sauvegardeShotsDB.open();
         // refraichis la listeView
         populate();
-
     }
 
     @Override
@@ -126,19 +124,16 @@ public class MyTrombi extends Activity implements OnClickListener {
                 break;
             case R.id.btnAddDB:
                 Log.d("fournir la bd", "cliqué");
-                sauvegardeShotsDB.insertShot("test", "test", "test");
+                sauvegardeShotsDB.insertShot("pathTrombi","media","testTrombi");
                 populate();
                 break;
         }
-
     }
 
     public void takeAPicture(){
 
         // recupere l'ancien nom du fichier sans l extension .jpg
         String extensionRemoved = filepath_last.split("\\.")[0];
-
-        Log.d("attention le bug",extensionRemoved);
 
         // recupere seulement le chiffre après "photo"
         Integer pictureNumber = Integer.parseInt(extensionRemoved.substring(5, extensionRemoved.length()));
@@ -151,7 +146,7 @@ public class MyTrombi extends Activity implements OnClickListener {
 
         // affiche un Toast pour signaler la demande de prise photo.
         Toast.makeText(getApplicationContext(), "Demande de prise de photo",
-                Toast.LENGTH_SHORT). show ();
+                Toast.LENGTH_SHORT). show();
 
         // on crée un Intent d'appel au lancement de la fonctionnalite photo de l'appareil
         Intent photoIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -192,10 +187,10 @@ public class MyTrombi extends Activity implements OnClickListener {
 
         // affiche un Toast pour signaler la demande de prise photo.
         Toast.makeText(getApplicationContext(), "Demande de prise de vidéo",
-                Toast.LENGTH_SHORT). show ();
+                Toast.LENGTH_SHORT). show();
 
         // on crée un Intent d'appel au lancement de la fonctionnalite photo de l'appareil
-        Intent photoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
+        Intent videoIntent = new Intent(MediaStore.ACTION_VIDEO_CAPTURE);
 
         // ajouter des information à l'Intent: ou enregistrer la photo
         File lieuSauvegarde = new File(Environment.getExternalStorageDirectory(), filepathMovie);
@@ -212,7 +207,7 @@ public class MyTrombi extends Activity implements OnClickListener {
         est disponible
         * la methode qui suit: 'onActivityResult est appelee automatiquement
         */
-        startActivityForResult(photoIntent, PRENDRE_VIDEO_FLAG);
+        startActivityForResult(videoIntent, PRENDRE_VIDEO_FLAG);
 
         // met a jour la variable
         filepathvideo_last = filepathMovie;
@@ -225,8 +220,12 @@ public class MyTrombi extends Activity implements OnClickListener {
             Toast.makeText(getApplicationContext(), "Photo bien sauvegardé",
                     Toast.LENGTH_LONG).show();
 
+            // initilisation par défault pour gerer le bug du data
+            String pathPicture = "le path de ma photo";
+
+            // IMPOSSIBLE DE RECUPERER L'URI CA VAUT NULL, MAIS PAS SUR UN TELEPHONE PHYSIQUE
             // recupere l'uri de la photo et le convertis en String
-            String pathPicture = data.getData().toString();
+            // pathPicture = data.getData().toString();
 
             // recupere la ligne saisie par l'utilisateur et insère dans la base de donnée
             askAndInsert("Un commentaire ?", "photo", pathPicture);
@@ -239,8 +238,12 @@ public class MyTrombi extends Activity implements OnClickListener {
             Toast.makeText(getApplicationContext(), "Vidéo bien sauvegardé",
                     Toast.LENGTH_LONG).show ();
 
+            // initilisation par défault pour gerer le bug du data
+            String pathMovie = "le path de ma video";
+
+            // IMPOSSIBLE DE RECUPERER L'URI CA VAUT NULL, MAIS PAS SUR UN TELEPHONE PHYSIQUE
             // recupere l'uri de la video et le convertis en String
-            String pathMovie = data.getData().toString();
+            // String pathMovie = data.getData().toString();
 
             // recupere la ligne saisie par l'utilisateur et insère dans la base de donnée
             askAndInsert("Un commentaire ?", "video", pathMovie);
@@ -261,7 +264,8 @@ public class MyTrombi extends Activity implements OnClickListener {
         if (filepathvideo_last!=null)
             outState.putString("FILENAME_VIDEO", filepathvideo_last);
 
-        //sauvegardeShotsDB.close();
+        // On ne doit pas le mettre, sinon quand l'appareil photo est appelé, la connexion a la base de donnée est fermé (PROBLEME AVEC TELEPHONE PYSIQUE)
+        // sauvegardeShotsDB.close();
     }
 
     // restoration de l'état de l'activity avant fermeture
@@ -269,6 +273,7 @@ public class MyTrombi extends Activity implements OnClickListener {
     public void onRestoreInstanceState(Bundle inState){
         Log.i("onRestoreInstanceState", "appelé");
         super.onRestoreInstanceState(inState);
+
         // vérification préliminaire: le bundle existe? a-t-il le champ voulu?
         if (inState != null)
             if (inState.containsKey("FILENAME_PHOTO"))
@@ -276,7 +281,8 @@ public class MyTrombi extends Activity implements OnClickListener {
                 filepath_last=inState.getString("FILENAME_PHOTO");
         filepathvideo_last=inState.getString("FILENAME_VIDEO");
 
-        //sauvegardeShotsDB.open();
+        // du coup la base de donnée est pas fermé, pas besoins de la réouvrir
+        // sauvegardeShotsDB.open();
     }
 
     // alimentation de la liste par le contenu de la base de données
@@ -285,20 +291,21 @@ public class MyTrombi extends Activity implements OnClickListener {
                 R.layout.affichage_ligne_base, sauvegardeShotsDB.getAllData(),
                 new String[] {ShotsDBhelper.KEY_PATH, ShotsDBhelper.KEY_COMMENT},
                 new int[] {R.id.nom_fichier, R.id.commentaire});
-        // Bind to our new adapter.
+
+        // Le coordonne avec le nouvel adaptateur
         ((ListView)findViewById(R.id.ListViewDB)).setAdapter(adapter);
     }
 
     // AlertDialog pour demander à l'utilisateur le nom de fichier d'enregistrement.
     private void askAndInsert(String note, final String fileType, final String pathFile){
 
-        // valeur par défaut attribuee a filename (gestion du bouton cancel)
+        // valeur par défault attribuee au commentaire
         stringforAsk = null;
 
         // creation du alert dialog avec un EditText, 2 boutons: OK et Cancel
         final AlertDialog.Builder alert = new AlertDialog.Builder(this);
         final EditText input = new EditText(this);
-        input.setText(note);
+        input.setHint(note);
         alert.setView(input);
         alert.setPositiveButton("Ok", new DialogInterface.OnClickListener() {
             public void onClick(DialogInterface dialog, int whichButton) {
@@ -310,10 +317,9 @@ public class MyTrombi extends Activity implements OnClickListener {
 
                 Toast.makeText(getApplicationContext(), "Votre fichier a bien été ajouté au trombinoscope",
                         Toast.LENGTH_LONG).show();
-
             }
         });
-        alert.setNegativeButton("Cancel",
+        alert.setNegativeButton("Annulé",
                 new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog, int whichButton) {
                         dialog.cancel();
